@@ -1,0 +1,59 @@
+<?php
+
+// 1. Сущность
+class User {
+    public function __construct(public string $name) {}
+}
+
+// 2. DTO (хотя входные данные — просто строка)
+class CreateUserDto {
+    public function __construct(public string $name) {}
+}
+
+// 3. Mapper (хотя DTO и сущность идентичны)
+class UserMapper {
+    public function toEntity(CreateUserDto $dto): User {
+        return new User($dto->name);
+    }
+}
+
+// 4. Интерфейс (хотя реализация одна и навсегда)
+interface UserRepositoryInterface {
+    public function save(User $user): void;
+}
+
+// 5. Реализация репозитория
+class DbUserRepository implements UserRepositoryInterface {
+    public function save(User $user): void {
+        echo "Saving {$user->name} to DB\n";
+    }
+}
+
+// 6. Фабрика репозиториев (зачем?)
+class UserRepositoryFactory {
+    public function create(): UserRepositoryInterface {
+        return new DbUserRepository();
+    }
+}
+
+// 7. Сервис с DI (хотя всё можно было сделать в 5 строк)
+class UserService {
+    public function __ __construct(
+        private UserRepositoryInterface $repo,
+        private UserMapper $mapper
+    ) {}
+
+    public function createUser(CreateUserDto $dto): void {
+        $user = $this->mapper->toEntity($dto);
+        $this->repo->save($user);
+    }
+}
+
+// 8. Инициализация через фабрику (ручная DI)
+$repo = (new UserRepositoryFactory())->create();
+$mapper = new UserMapper();
+$service = new UserService($repo, $mapper);
+
+// 9. Использование
+$dto = new CreateUserDto("Alice");
+$service->createUser($dto);
