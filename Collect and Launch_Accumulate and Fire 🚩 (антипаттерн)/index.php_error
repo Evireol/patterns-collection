@@ -1,0 +1,44 @@
+<?php
+// ===== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ — источник проблемы =====
+$discountRate = 0;     // Скидка (%)
+$taxRate = 0;          // Налог (%)
+$currency = 'RUB';     // Валюта
+
+// ===== ФУНКЦИЯ: вычисляет итоговую стоимость заказа
+function calculateOrderTotal(array $items): string {
+    global $discountRate, $taxRate, $currency;
+
+    if (empty($items)) {
+        throw new InvalidArgumentException("Список товаров пуст");
+    }
+
+    $subtotal = array_sum(array_column($items, 'price'));
+    
+    // Применяем скидку (из глобальной переменной!)
+    $discounted = $subtotal * (1 - $discountRate / 100);
+    
+    // Применяем налог (из глобальной переменной!)
+    $total = $discounted * (1 + $taxRate / 100);
+
+    return number_format($total, 2, ',', ' ') . " $currency";
+}
+
+// ===== ГДЕ-ТО В ДРУГОМ МЕСТЕ КОДА (возможно, в другом файле) =====
+$discountRate = 10;  // ← Установили скидку
+$taxRate = 20;       // ← Установили налог
+$currency = 'EUR';   // ← Сменили валюту
+
+// ===== ВЫЗОВ ФУНКЦИИ =====
+$cart = [
+    ['name' => 'Книга', 'price' => 1000],
+    ['name' => 'Блокнот', 'price' => 300]
+];
+
+echo calculateOrderTotal($cart); 
+// Вывод: "1 188,00 EUR"
+
+// А что, если кто-то случайно изменит глобальные переменные?
+$taxRate = 999; // ← Ошибка! Но функция не знает об этом.
+
+echo calculateOrderTotal($cart); 
+// Вывод: "23 940,00 EUR" — катастрофа!
